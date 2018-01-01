@@ -5,8 +5,8 @@ import org.json.*;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
+import java.io.OutputStreamWriter;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Scanner;
@@ -30,7 +30,7 @@ public class CFApi {
 
     public void obtainZones() {
 
-        allZones = CFApi.fetchAPI(REQUEST_TYPE.ZONE,"");
+        allZones = CFApi.retrieveZones();
 
         for ( int i = 0; i < allZones.length(); i++ ) {
             JSONObject obj = allZones.getJSONObject(i);
@@ -41,29 +41,90 @@ public class CFApi {
                     )
             );
         }
+
     }
 
 
 
-    static public JSONArray fetchAPI(REQUEST_TYPE request_type, String zone_id) {
-        InputStream response = null;
+    static public JSONArray getRecords(String zone_id) {
 
-        URLConnection connection = null;
+        URL url = null;
         try {
-            if( request_type == REQUEST_TYPE.ZONE )
-                connection = new URL(endpoint + "zones" + filters).openConnection();
-            else
-                connection = new URL(endpoint + "zones/" + zone_id + "/dns_records" + filters).openConnection();
+                url = new URL(endpoint + "zones/" + zone_id + "/dns_records" + filters);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        connection.setRequestProperty("X-Auth-Email", X_Auth_Email);
-        connection.setRequestProperty("X-Auth-Key", X_Auth_Key);
-        connection.setRequestProperty("Content-Type", Content_Type);
+        return CFApi.contactCF(url,"GET","");
+    }
 
+    //at the moment void, we don't need to manage response
+    static public void updateRecord(String zoneID, String recordID, String data) {
+        URL url = null;
         try {
-            response = connection.getInputStream();
+            url = new URL(endpoint + "zones/" + zoneID + "/dns_records/" + recordID);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+
+        JSONArray newObj = contactCF(url,"PUT", data);
+    }
+
+    static public JSONArray retrieveZones() {
+
+        URL url = null;
+        try {
+            url = new URL(endpoint + "zones");
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+
+        return CFApi.contactCF(url,"GET","");
+    }
+
+    static private JSONArray contactCF(URL url, String requestMethod,String data) {
+        InputStream response = null;
+        HttpURLConnection httpCon = null;
+        try {
+            httpCon = (HttpURLConnection) url.openConnection();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        httpCon.setDoOutput(true);
+        try {
+            httpCon.setRequestMethod(requestMethod);
+        } catch (ProtocolException e) {
+            e.printStackTrace();
+        }
+        httpCon.setRequestProperty("X-Auth-Email",X_Auth_Email);
+        httpCon.setRequestProperty("X-Auth-Key",X_Auth_Key);
+        httpCon.setRequestProperty("Content-Type",Content_Type);
+
+        if ( data != "" ) {
+            OutputStreamWriter out = null;
+            try {
+                out = new OutputStreamWriter(
+                        httpCon.getOutputStream());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                out.write(data);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        //obtain response and prepare JSONArray for CloudFlare result
+        try {
+            response = httpCon.getInputStream();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -72,8 +133,14 @@ public class CFApi {
             String receiveData = scanner.useDelimiter("\\A").next();
             zoneObj = new JSONObject(receiveData);
         }
+        JSONArray objArray = null;
+        try {
+            objArray = zoneObj.getJSONArray("result");
+        } catch (JSONException e) {
+               //e.printStackTrace();
+        }
 
-        return zoneObj.getJSONArray("result");
+        return objArray;
     }
 
     static private void readConfig() {
@@ -103,6 +170,15 @@ public class CFApi {
         }
     }
 
-
+    public CFZone findZone(String name) {
+        CFZone theDomain = null;
+        for(CFZone domain : zonesARList) {
+            if ( domain.equals(name) ) {
+                theDomain = domain;
+                break;
+            }
+        }
+        return theDomain;
+    }
 
 }
