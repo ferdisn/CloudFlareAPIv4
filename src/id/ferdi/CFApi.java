@@ -12,7 +12,6 @@ import java.util.Properties;
 import java.util.Scanner;
 
 public class CFApi {
-    public enum REQUEST_TYPE { ZONE, DNSRecord }
 
     static private String endpoint = "https://api.cloudflare.com/client/v4/";
     static private String filters = "?page=1&per_page=40&order=status&direction=desc&match=all";
