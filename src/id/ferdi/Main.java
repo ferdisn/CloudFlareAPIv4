@@ -10,8 +10,7 @@ public class Main {
         api.obtainZones();
 
         //alter existing record
-        api.findZone("didinofendra.net").findRecord("_acme-challenge.imap.didinofendra.net").updateRecord("tes2");
-
+        api.findZone("paragita.com").findRecord("_acme-challenge.imap.paragita.com").updateRecord("DeployTest");
 
 
         System.out.println("");

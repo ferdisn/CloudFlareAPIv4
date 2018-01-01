@@ -15,7 +15,7 @@ public class CFApi {
     public enum REQUEST_TYPE { ZONE, DNSRecord }
 
     static private String endpoint = "https://api.cloudflare.com/client/v4/";
-    static private String filters = "?page=1&per_page=20&order=status&direction=desc&match=all";
+    static private String filters = "?page=1&per_page=40&order=status&direction=desc&match=all";
     static private String X_Auth_Email = "";
     static private String X_Auth_Key = "";
     static private String Content_Type = "application/json";
